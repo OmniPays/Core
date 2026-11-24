@@ -58,7 +58,7 @@ Contracts are built separately with `make build` in `contracts/` (`contracts/Mak
 
 ## Dependencies
 
-- `@stellar/stellar-sdk` 14 (`package.json:29`) plus `cors`, `date-fns`, `dotenv`, `express`, `soroban-client` and `vercel` (`package.json:28`).
+- `@stellar/stellar-sdk` 14 (`package.json:29`) plus `axios` (`:30`), `cors`, `date-fns`, `dotenv`, `express`, `soroban-client` and `vercel` (`package.json:28`). `axios` fetches the mainnet token list in `scripts/set_trustlines.ts:65`.
 - Env vars, read by name only: `SOROSWAP_ADMIN_SECRET_KEY` (`utils/env_config.ts:73`), `TEST_TOKENS_ADMIN_SECRET_KEY` (`scripts/deploy.ts:60`), `TESTING_ACCOUNT_SECRET_KEY` (`scripts/manual_testing/all.ts:11`), `TRUSTLINE_WALLET_SECRET_KEY` (`scripts/set_trustlines.ts:24`), `MAINNET_RPC_URL` (`utils/env_config.ts:63`). Template at `.env.example`.
 - Docker images pinned by digest in `configs.json:2` and `:3`, consumed by `scripts/quickstart.sh:3` and `scripts/run.sh:1`.
 - External: the Soroswap token list at `https://raw.githubusercontent.com/soroswap/token-list/main/tokenList.json` (`scripts/set_trustlines.ts:66`, `scripts/see_trustlines.ts:41`).
