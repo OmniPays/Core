@@ -35,7 +35,7 @@ export async function deployRandomTokens(numberOfTokens: number, resetTokensBook
 
       if (i < numberOfTokens / 2) {
         const deployedToken = await deployToken(name, symbol, '', source, addressBook);
-        randomTokensBook.addToken(network, deployedToken!);
+        randomTokensBook.addToken(network, deployedToken);
       } else {
         const asset = new Asset(symbol, source.publicKey());
         const contractId = asset.contractId(loadedConfig.passphrase);
@@ -60,6 +60,6 @@ export async function deployRandomTokens(numberOfTokens: number, resetTokensBook
     randomTokensBook.writeToFile();
   } catch (error) {
     console.log('🚀 deployRandomTokens: error:', error);
-    
+    throw error;
   }
 }

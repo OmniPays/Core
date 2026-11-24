@@ -17,36 +17,34 @@ export async function deployToken(
   icon: string,
   source: Keypair,
   addressBook: AddressBook,
-) {
-  try {
-    const contractId = await deploySorobanToken('token', addressBook, source);
+): Promise<Token> {
+  const contractId = await deploySorobanToken('token', addressBook, source);
 
-    // Initializing Token
-    const tokenInitParams = [
-      new Address(source.publicKey()).toScVal(),
-      nativeToScVal(7, { type: 'u32' }),
-      nativeToScVal(name, { type: 'string' }),
-      nativeToScVal(symbol, { type: 'string' }),
-    ];
-
-    const contractInstance = new Contract(contractId!);
-    const contractOperation = contractInstance.call('initialize', ...tokenInitParams);
-    const result = await invoke(contractOperation, source, false);
-
-    const newToken: Token = {
-      name: name,
-      contract: contractId!,
-      code: symbol,
-      icon: icon,
-      decimals: 7,
-    }
-
-    if (result.status === 'SUCCESS') {
-      return newToken
-    } else {
-      throw Error (`Token ${symbol} deployment failed with contractId: ${contractId}!`);
-    }
-  } catch (error) {
-    console.log('🚀 deployToken: error:', error);
+  if (!contractId) {
+    throw new Error(`Token ${symbol} deployment failed: no contract id returned`);
   }
+
+  // Initializing Token
+  const tokenInitParams = [
+    new Address(source.publicKey()).toScVal(),
+    nativeToScVal(7, { type: 'u32' }),
+    nativeToScVal(name, { type: 'string' }),
+    nativeToScVal(symbol, { type: 'string' }),
+  ];
+
+  const contractInstance = new Contract(contractId);
+  const contractOperation = contractInstance.call('initialize', ...tokenInitParams);
+  const result = await invoke(contractOperation, source, false);
+
+  if (result.status !== 'SUCCESS') {
+    throw new Error(`Token ${symbol} deployment failed with contractId: ${contractId}`);
+  }
+
+  return {
+    name: name,
+    contract: contractId,
+    code: symbol,
+    icon: icon,
+    decimals: 7,
+  };
 }

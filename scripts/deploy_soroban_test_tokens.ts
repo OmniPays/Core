@@ -39,13 +39,14 @@ export async function deploySorobanTestTokens(
         source,
         addressBook,
       );
-      tokensBook.addToken(network, deployedToken!);
+      tokensBook.addToken(network, deployedToken);
       console.log(
-        `🚀 Token ${deployedToken?.code} deployed successfully, address ${deployedToken?.contract}`,
+        `🚀 Token ${deployedToken.code} deployed successfully, address ${deployedToken.contract}`,
       );
     }
     tokensBook.writeToFile();
   } catch (error) {
     console.log("🚀 deploySorobanTestTokens: error:", error);
+    throw error;
   }
 }
