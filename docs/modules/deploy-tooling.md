@@ -2,7 +2,7 @@
 
 > **Living document.** Read this before modifying the module. Update it in the same change whenever the scripts, the yarn commands, the address book format, or the required env vars change.
 
-**Source:** `scripts/`, `utils/`, `configs.json`, `tsconfig.json` · **Last verified:** 2026-09-06
+**Source:** `scripts/`, `utils/`, `configs.json`, `tsconfig.json` · **Last verified:** 2026-11-24
 
 ## Purpose
 
@@ -35,6 +35,7 @@ From `package.json:6`:
 | Command | Runs |
 |---|---|
 | `yarn build` | `tsc` (`package.json:7`), output to `./dist` (`tsconfig.json`). |
+| `yarn start` | `node api/server.js` (`package.json:8`), the address API entry point. |
 | `yarn deploy <network>` | `yarn build && node dist/scripts/deploy.js` (`package.json:10`). |
 | `yarn test <network> [public]` | `yarn build && node dist/scripts/manual_testing/all.js` (`package.json:9`). |
 | `yarn upload <network>` | `node dist/scripts/upload_addresses.js` (`package.json:11`). |

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "start": "node scripts/api/server.js",
+    "start": "node api/server.js",
     "test": "yarn build && node dist/scripts/manual_testing/all.js",
     "deploy": "yarn build && node dist/scripts/deploy.js",
     "upload": "node dist/scripts/upload_addresses.js",
