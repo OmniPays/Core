@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "name": "my-express-api",
+  "name": "omnipays-core-address-api",
   "builds": [
     {
       "src": "api/*.js",

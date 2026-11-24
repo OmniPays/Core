@@ -58,7 +58,7 @@ Pair addresses are not recorded here. They are derived deterministically, see `c
 - Local mode is hardcoded to `/workspace/.soroban` (`api/server.js:11`), so running `node api/server.js` on a host machine serves 404s for everything.
 - Both `package.json:8` and `api/package.json:5` define `"start": "node api/server.js"`, the real entry point. The old `scripts/api/server.js` path did not exist.
 - `README.md:111` documents `/api/<network>/factory` and `/api/<network>/router`; those work because `factory` and `router` are the keys in the `ids` map, not because the route special cases them.
-- `vercel.json:3` still carries the placeholder name `my-express-api`.
+- The Vercel project name is `omnipays-core-address-api` (`vercel.json:3`).
 
 ## Testing
 
