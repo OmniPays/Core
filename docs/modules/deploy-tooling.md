@@ -25,7 +25,7 @@ The TypeScript pipeline that installs the contract WASMs, deploys and initialize
 | `utils/tokens_book.ts` | `TokensBook`, per network token list. |
 | `utils/env_config.ts` | `EnvConfig`, RPC and keypair loading. |
 | `utils/contract.ts` | Install, deploy, invoke, Stellar asset deploy, balance helpers. |
-| `utils/tx.ts` | Transaction building and submission, `getCurrentTimePlusOneHour`. |
+| `utils/tx.ts` | Transaction building and submission, `getCurrentTimePlusOneHour` (Unix seconds, matching the router's ledger timestamp). |
 | `configs.json` | Docker image digests and per network RPC and passphrase config. |
 
 ## Commands
@@ -68,6 +68,7 @@ Contracts are built separately with `make build` in `contracts/` (`contracts/Mak
 - **`utils/contract.ts:20` reads `process.argv[2]` as the network at import time.** Any script that imports it, directly or transitively, must be invoked with the network as its first argument or `config()` throws. This is why every entry script re-reads `process.argv[2]` too.
 - Scripts run from `dist/`, not from source. `utils/env_config.ts:9` resolves `.env` as `../../.env` relative to `__dirname`, which only lands on the repo root when running the compiled `dist/utils/env_config.js`. Running the TypeScript directly will not find the `.env`.
 - `AddressBook.loadFromFile` takes a folder argument so you can read `public/`, but `writeToFile` is hardcoded to `.soroban/` (`utils/address_book.ts:45`). You cannot write back to `public/` except through `yarn upload`.
+- `getCurrentTimePlusOneHour` (`utils/tx.ts:95`) returns Unix **seconds**, not milliseconds, because `ensure_deadline` compares it with `e.ledger().timestamp()` (`contracts/router/src/lib.rs:33`).
 - `installContract` and `deployContract` need `*.optimized.wasm` (`utils/contract.ts:12`), which only exists after `soroban contract optimize` has run. `make build` does it per contract; a bare `cargo build` does not.
 - `scripts/deploy.ts:14` and `:61` airdrop only when the network is not mainnet. A mainnet run assumes both accounts are already funded.
 - The whole test token, random token and liquidity seeding block runs unconditionally in `deployAndInitContracts` (`scripts/deploy.ts:70` to `:83`), including on mainnet. The README claims it is skipped for mainnet (`README.md:88`); the code does not skip it.

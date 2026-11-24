@@ -93,13 +93,8 @@ export async function createTxBuilder(source: Keypair): Promise<TransactionBuild
 }
 
 export const getCurrentTimePlusOneHour = () => {
-  // Get the current time in milliseconds
-  const now = Date.now();
-
-  // Add one hour (3600000 milliseconds)
-  const oneHourLater = now + 3600000;
-
-  return oneHourLater;
+  const nowInSeconds = Math.floor(Date.now() / 1000);
+  return nowInSeconds + 3600;
 };
 
 // export async function invokeClassicOp(operation: xdr.Operation<Operation>, source: Keypair) {
