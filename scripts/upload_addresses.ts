@@ -17,9 +17,9 @@ function main(network: string) {
     const sorobanDir = path.join(__dirname, '../../.soroban');
     const publicDir = path.join(__dirname, '../../public');
     
-    // Create a backup folder with the current date
-    const currentDate = format(new Date(), 'yyyy-MM-dd');
-    const backupDir = path.join(publicDir, `backup-${currentDate}`);
+    // Create a backup folder with the current timestamp
+    const timestamp = format(new Date(), 'yyyy-MM-dd-HHmmssSSS');
+    const backupDir = path.join(publicDir, `backup-${timestamp}`);
     
     // Ensure the public and backup directories exist
     if (!existsSync(publicDir)) {

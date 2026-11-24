@@ -17,7 +17,7 @@ A minimal Express service that publishes the deployed contract addresses and tok
 | `vercel.json` | Vercel build and routing config. |
 | `public/<network>.contracts.json` | `{ ids, hashes }` per network, currently `mainnet` and `testnet`. |
 | `public/tokens.json`, `public/random_tokens.json` | Token lists served verbatim. |
-| `public/backup-<date>/` | Dated snapshots written by `yarn upload`. |
+| `public/backup-<timestamp>/` | Timestamped snapshots written by `yarn upload`, named `backup-YYYY-MM-DD-HHmmssSSS`. |
 | `public/mainnet-deployment-2024-03/` | Archived optimized WASM for the mainnet deployment. |
 
 ## Endpoints
