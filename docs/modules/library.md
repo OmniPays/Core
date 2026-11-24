@@ -2,7 +2,7 @@
 
 > **Living document.** Read this before modifying the module. Update it in the same change whenever the exported functions, the math, or the error enum change.
 
-**Source:** `contracts/library/` · **Crate:** `soroswap-library` 2.0.0, `cdylib` + `rlib`, published to crates.io (`Cargo.toml:3`, `:12`, `:15`) · **Last verified:** 2026-09-06
+**Source:** `contracts/library/` · **Crate:** `soroswap-library` 2.0.0, `cdylib` + `rlib`, published to crates.io (`Cargo.toml:3`, `:12`, `:15`) · **Last verified:** 2026-11-24
 
 ## Purpose
 
@@ -23,34 +23,35 @@ Pure helper math and address derivation shared across the protocol: sorting a to
 
 ## Public surface
 
-Exported from the crate (`src/lib.rs:15`) and mirrored as contract functions on `SoroswapLibrary` (`src/lib.rs:169`). All return `Result<_, SoroswapLibraryError>`.
+Exported from the crate (`src/lib.rs:14`) and mirrored as contract functions on `SoroswapLibrary` (`src/lib.rs:184`). All return `Result<_, SoroswapLibraryError>`.
 
 | Function | Signature | Source |
 |---|---|---|
-| `sort_tokens` | `(token_a: Address, token_b: Address) -> (Address, Address)` | `src/tokens.rs:37` |
-| `pair_for` | `(e: Env, factory: Address, token_a: Address, token_b: Address) -> Address` | `src/tokens.rs:62` |
-| `get_reserves_with_factory` | `(e: Env, factory: Address, token_a: Address, token_b: Address) -> (i128, i128)` | `src/reserves.rs:25` |
-| `get_reserves_with_pair` | `(e: Env, pair: Address, token_a: Address, token_b: Address) -> (i128, i128)` | `src/reserves.rs:52` |
-| `quote` | `(amount_a: i128, reserve_a: i128, reserve_b: i128) -> i128` | `src/quotes.rs:18` |
-| `get_amount_out` | `(amount_in: i128, reserve_in: i128, reserve_out: i128) -> i128` | `src/quotes.rs:39` |
-| `get_amount_in` | `(amount_out: i128, reserve_in: i128, reserve_out: i128) -> i128` | `src/quotes.rs:68` |
-| `get_amounts_out` | `(e: Env, factory: Address, amount_in: i128, path: Vec<Address>) -> Vec<i128>` | `src/quotes.rs:92` |
-| `get_amounts_in` | `(e: Env, factory: Address, amount_out: i128, path: Vec<Address>) -> Vec<i128>` | `src/quotes.rs:120` |
+| `sort_tokens` | `(token_a: Address, token_b: Address) -> (Address, Address)` | `src/tokens.rs:36` |
+| `pair_for` | `(e: Env, factory: Address, token_a: Address, token_b: Address) -> Address` | `src/tokens.rs:64` |
+| `get_reserves_with_factory` | `(e: Env, factory: Address, token_a: Address, token_b: Address) -> (i128, i128)` | `src/reserves.rs:22` |
+| `get_reserves_with_pair` | `(e: Env, pair: Address, token_a: Address, token_b: Address) -> (i128, i128)` | `src/reserves.rs:54` |
+| `quote` | `(amount_a: i128, reserve_a: i128, reserve_b: i128) -> i128` | `src/quotes.rs:17` |
+| `get_amount_out` | `(amount_in: i128, reserve_in: i128, reserve_out: i128) -> i128` | `src/quotes.rs:46` |
+| `get_amount_in` | `(amount_out: i128, reserve_in: i128, reserve_out: i128) -> i128` | `src/quotes.rs:90` |
+| `get_amounts_out` | `(e: Env, factory: Address, amount_in: i128, path: Vec<Address>) -> Vec<i128>` | `src/quotes.rs:130` |
+| `get_amounts_in` | `(e: Env, factory: Address, amount_out: i128, path: Vec<Address>) -> Vec<i128>` | `src/quotes.rs:172` |
 
 ## Fee and quote math
 
-- `quote` = `amount_a * reserve_b / reserve_a` (`src/quotes.rs:25`), no fee, used only for liquidity ratios.
-- `get_amount_out` (`src/quotes.rs:39`): `fee = ceil(amount_in * 3 / 1000)`, then `(amount_in - fee) * reserve_out / (reserve_in + amount_in - fee)` (`:47`). This matches the pair's own fee computation (`contracts/pair/src/lib.rs:288`), which is what makes the K check pass.
-- `get_amount_in` (`src/quotes.rs:68`): `ceil(reserve_in * amount_out * 1000 / ((reserve_out - amount_out) * 997)) + 1` (`:75`). The ceiling division and the extra `+ 1` both round in the pool's favor, so a round trip through `get_amount_out(get_amount_in(x))` will not return exactly `x`.
-- `get_amounts_out` walks the path forward pushing to the back (`:100`); `get_amounts_in` walks it backward pushing to the front (`:128`). Both require `path.len() >= 2` (`:93`, `:121`).
+- `quote` = `amount_a * reserve_b / reserve_a` (`src/quotes.rs:28`), no fee, used only for liquidity ratios.
+- `get_amount_out` (`src/quotes.rs:46`): `fee = ceil(amount_in * 3 / 1000)`, then `(amount_in - fee) * reserve_out / (reserve_in + amount_in - fee)` (`:60`). This matches the pair's own fee computation, which is what makes the K check pass.
+- `get_amount_in` (`src/quotes.rs:90`): `ceil(reserve_in * amount_out * 1000 / ((reserve_out - amount_out) * 997)) + 1` (`:105`). It rejects `amount_out >= reserve_out` with `InsufficientLiquidity` (`:101`) instead of returning a negative amount or dividing by zero. The ceiling division and the extra `+ 1` both round in the pool's favor, so a round trip through `get_amount_out(get_amount_in(x))` will not return exactly `x`.
+- Overflow in either quote function returns `Overflow` (307) instead of panicking (`:58`, `:108`).
+- `get_amounts_out` walks the path forward pushing to the back (`:143`); `get_amounts_in` walks it backward pushing to the front (`:185`). Both require `path.len() >= 2` (`:136`, `:178`).
 
 ## Deterministic pair address
 
-`pair_for` (`src/tokens.rs:62`) sorts the tokens, builds `salt = sha256(token_0.to_xdr() || token_1.to_xdr())` (`src/tokens.rs:16`), then returns `e.deployer().with_address(factory, salt).deployed_address()`. This must stay byte for byte identical to the factory's `Pair::salt` (`contracts/factory/src/pair.rs:33`) and its `with_current_contract` deploy (`contracts/factory/src/pair.rs:74`). The approach is documented at `src/tokens.rs:50`, pointing to `paltalabs/deterministic-address-soroban`.
+`pair_for` (`src/tokens.rs:64`) sorts the tokens, builds `salt = sha256(token_0.to_xdr() || token_1.to_xdr())` (`src/tokens.rs:23`), then returns `e.deployer().with_address(factory, salt).deployed_address()`. This must stay byte for byte identical to the factory's `Pair::salt` and its `with_current_contract` deploy. The approach is documented at `src/tokens.rs:52`, pointing to `paltalabs/deterministic-address-soroban`.
 
 ## Errors
 
-`SoroswapLibraryError` (`src/error.rs:6`): `InsufficientAmount` 301, `InsufficientLiquidity` 302, `InsufficientInputAmount` 303, `InsufficientOutputAmount` 304, `InvalidPath` 305, `SortIdenticalTokens` 306. The router re-maps these to 510 to 515 (`contracts/router/src/error.rs:62`).
+`SoroswapLibraryError` (`src/error.rs:6`): `InsufficientAmount` 301, `InsufficientLiquidity` 302, `InsufficientInputAmount` 303, `InsufficientOutputAmount` 304, `InvalidPath` 305, `SortIdenticalTokens` 306, `Overflow` 307. Arithmetic that overflows in `get_amount_out` or `get_amount_in` now returns `Overflow` rather than panicking. The in-repo router consumes a different published crate version and re-maps 301 to 306 to 510 to 515 (`contracts/router/src/error.rs:62`); it does not know about 307 yet.
 
 ## Events
 
@@ -74,4 +75,4 @@ None. This module publishes no events.
 
 ## Testing
 
-`make test` in `contracts/library` (`Makefile:5`). `src/test/tokens.rs` is the guard on `sort_tokens` and `pair_for`, `src/test/quote.rs` on the fee math, `src/test/get.rs` on the chained path helpers.
+`make test` in `contracts/library` (`Makefile:5`). `src/test/tokens.rs` guards `sort_tokens` and `pair_for`, `src/test/quote.rs` the fee math, and `src/test/get.rs` the chained path helpers plus direct failure-path tests for overflow and reserve exhaustion in `get_amount_in` / `get_amount_out`.

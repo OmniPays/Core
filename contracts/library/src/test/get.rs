@@ -1,4 +1,5 @@
 use crate::error::SoroswapLibraryError;
+use crate::quotes::{get_amount_in as quote_amount_in, get_amount_out as quote_amount_out};
 use crate::test::SoroswapLibraryTest;
 use soroban_sdk::{vec, Address, Vec};
 
@@ -216,4 +217,48 @@ fn get_reserves_with_pair() {
         .transfer(&test.user, &test.pair.address, &amount_1);
     test.pair.deposit(&test.user);
     assert_eq!(test.pair.get_reserves(), (amount_0, amount_1));
+}
+
+#[test]
+fn get_amount_out_overflow_returns_error() {
+    assert_eq!(
+        Err(SoroswapLibraryError::Overflow),
+        quote_amount_out(i128::MAX, 100, 100)
+    );
+    assert_eq!(
+        Err(SoroswapLibraryError::Overflow),
+        quote_amount_out(1000, 100, i128::MAX)
+    );
+    assert_eq!(
+        Err(SoroswapLibraryError::Overflow),
+        quote_amount_out(1000, i128::MAX, 100)
+    );
+}
+
+#[test]
+fn get_amount_in_overflow_returns_error() {
+    assert_eq!(
+        Err(SoroswapLibraryError::Overflow),
+        quote_amount_in(i128::MAX / 2, i128::MAX, i128::MAX)
+    );
+    assert_eq!(
+        Err(SoroswapLibraryError::Overflow),
+        quote_amount_in(1, i128::MAX, 100)
+    );
+    assert_eq!(
+        Err(SoroswapLibraryError::Overflow),
+        quote_amount_in(1, 100, i128::MAX)
+    );
+}
+
+#[test]
+fn get_amount_in_exhausts_reserve_returns_insufficient_liquidity() {
+    assert_eq!(
+        Err(SoroswapLibraryError::InsufficientLiquidity),
+        quote_amount_in(100, 100, 100)
+    );
+    assert_eq!(
+        Err(SoroswapLibraryError::InsufficientLiquidity),
+        quote_amount_in(101, 100, 100)
+    );
 }

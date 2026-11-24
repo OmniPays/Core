@@ -21,4 +21,6 @@ pub enum SoroswapLibraryError {
 
     /// SoroswapLibrary: token_a and token_b have identical addresses
     SortIdenticalTokens = 306,
+
+    Overflow = 307,
 }

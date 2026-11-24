@@ -55,16 +55,25 @@ pub fn get_amount_out(
         return Err(SoroswapLibraryError::InsufficientLiquidity);
     }
 
-    let fee = (amount_in.checked_mul(3).unwrap())
-        .checked_ceiling_div(1000)
-        .unwrap();
+    let fee = amount_in
+        .checked_mul(3)
+        .and_then(|value| value.checked_ceiling_div(1000))
+        .ok_or(SoroswapLibraryError::Overflow)?;
 
-    let amount_in_less_fee = amount_in.checked_sub(fee).unwrap();
-    let numerator = amount_in_less_fee.checked_mul(reserve_out).unwrap();
+    let amount_in_less_fee = amount_in
+        .checked_sub(fee)
+        .ok_or(SoroswapLibraryError::Overflow)?;
+    let numerator = amount_in_less_fee
+        .checked_mul(reserve_out)
+        .ok_or(SoroswapLibraryError::Overflow)?;
 
-    let denominator = reserve_in.checked_add(amount_in_less_fee).unwrap();
+    let denominator = reserve_in
+        .checked_add(amount_in_less_fee)
+        .ok_or(SoroswapLibraryError::Overflow)?;
 
-    Ok(numerator.checked_div(denominator).unwrap())
+    numerator
+        .checked_div(denominator)
+        .ok_or(SoroswapLibraryError::Overflow)
 }
 
 /// Given an output amount of an asset and pair reserves, returns a required input amount of the other asset.
@@ -89,21 +98,21 @@ pub fn get_amount_in(
     if reserve_in <= 0 || reserve_out <= 0 {
         return Err(SoroswapLibraryError::InsufficientLiquidity);
     }
+    if amount_out >= reserve_out {
+        return Err(SoroswapLibraryError::InsufficientLiquidity);
+    }
     let numerator = reserve_in
         .checked_mul(amount_out)
-        .unwrap()
-        .checked_mul(1000)
-        .unwrap();
+        .and_then(|value| value.checked_mul(1000))
+        .ok_or(SoroswapLibraryError::Overflow)?;
     let denominator = reserve_out
         .checked_sub(amount_out)
-        .unwrap()
-        .checked_mul(997)
-        .unwrap();
-    Ok(numerator
+        .and_then(|value| value.checked_mul(997))
+        .ok_or(SoroswapLibraryError::Overflow)?;
+    numerator
         .checked_ceiling_div(denominator)
-        .unwrap()
-        .checked_add(1)
-        .unwrap())
+        .and_then(|value| value.checked_add(1))
+        .ok_or(SoroswapLibraryError::Overflow)
 }
 
 /// Performs chained getAmountOut calculations on any number of pairs.
