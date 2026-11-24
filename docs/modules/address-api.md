@@ -53,11 +53,11 @@ Pair addresses are not recorded here. They are derived deterministically, see `c
 
 ## Gotchas and invariants
 
-- **`public/` is committed on purpose.** `README.md:125` states the files must be committed for Vercel to serve them. Editing `public/` by hand desynchronizes it from `.soroban/`; use `yarn upload <network>`.
+- **`public/` is committed on purpose.** The README's "Deploy and publish addresses" section explains that these files must be committed for Vercel to serve them. Editing `public/` by hand desynchronizes it from `.soroban/`; use `yarn upload <network>`.
 - `/api/:network/:contractName` reads only the `ids` map, never `hashes` (`api/server.js:48`). There is no route that exposes WASM hashes.
 - Local mode is hardcoded to `/workspace/.soroban` (`api/server.js:11`), so running `node api/server.js` on a host machine serves 404s for everything.
-- Both `package.json:8` and `api/package.json:5` define `"start": "node api/server.js"`, the real entry point. The old `scripts/api/server.js` path did not exist.
-- `README.md:111` documents `/api/<network>/factory` and `/api/<network>/router`; those work because `factory` and `router` are the keys in the `ids` map, not because the route special cases them.
+- The root `package.json` defines `"start": "node api/server.js"`; inside `api/`, `api/package.json` defines `"start": "node server.js"`. The old `scripts/api/server.js` path did not exist.
+- The README documents `/api/<network>/factory` and `/api/<network>/router`; those work because `factory` and `router` are the keys in the `ids` map, not because the route special cases them.
 - The Vercel project name is `omnipays-core-address-api` (`vercel.json:3`).
 
 ## Testing

@@ -59,7 +59,7 @@ Commands verified in the repo. Do not invent variants.
 - Contracts import each other's built WASM at compile time (`contracts/router/src/factory.rs:2`, `contracts/pair/src/lib.rs:20`). Build order matters, and the router and library need the `*.optimized.wasm` outputs.
 - The pair never pulls tokens. `deposit`, `swap` and `withdraw` assume the caller already transferred value in and have **no** `require_auth`. Go through the router.
 - `initialize` on both the factory (`contracts/factory/src/lib.rs:178`) and the router (`contracts/router/src/lib.rs:390`) is unauthenticated. First caller wins, and neither address can be changed afterwards.
-- README drift: it claims test token and liquidity seeding is skipped on mainnet (`README.md:88`), but `scripts/deploy.ts:70` runs it unconditionally. It documents `bash scripts/manual_testing/all.sh` (`README.md:191`), which does not exist. Its "SorobanExp" link for the factory (`README.md:8`) points at the router address. Verify README claims against the code before relying on them.
+- Deployment seeds test tokens and liquidity unconditionally in `scripts/deploy.ts:70`, including on mainnet. The README now reflects this; verify before running any deploy against a live network.
 - Never commit `.env`, secret keys or mnemonics. `.soroban/` and `.env` are gitignored (`.gitignore:7`, `:9`); `public/` is committed on purpose.
 
 ## Cross-repo dependencies

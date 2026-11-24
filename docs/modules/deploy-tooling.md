@@ -72,10 +72,10 @@ Contracts are built separately with `make build` in `contracts/` (`contracts/Mak
 - `getCurrentTimePlusOneHour` (`utils/tx.ts:95`) returns Unix **seconds**, not milliseconds, because `ensure_deadline` compares it with `e.ledger().timestamp()` (`contracts/router/src/lib.rs:33`).
 - `installContract` and `deployContract` need `*.optimized.wasm` (`utils/contract.ts:12`), which only exists after `soroban contract optimize` has run. `make build` does it per contract; a bare `cargo build` does not.
 - `scripts/deploy.ts:14` and `:61` airdrop only when the network is not mainnet. A mainnet run assumes both accounts are already funded.
-- The whole test token, random token and liquidity seeding block runs unconditionally in `deployAndInitContracts` (`scripts/deploy.ts:70` to `:83`), including on mainnet. The README claims it is skipped for mainnet (`README.md:88`); the code does not skip it.
+- The whole test token, random token and liquidity seeding block runs unconditionally in `deployAndInitContracts` (`scripts/deploy.ts:70` to `:83`), including on mainnet. Treat every deploy run as state changing; the README documents this behavior.
 - `.soroban/` and `.env` are gitignored (`.gitignore:7`, `:9`). Deployment output is only durable once `yarn upload` copies it into `public/` and it is committed.
 - Never put secret keys into `configs.json` or `public/`. Only `.env` holds them.
 
 ## Testing
 
-There is no unit test suite here. `yarn test <network> [public]` runs `scripts/manual_testing/all.ts` end to end against a real network: mint, add liquidity, swap, remove liquidity (`scripts/manual_testing/all.ts:16`). Passing `public` as the second argument reads addresses from `public/` instead of `.soroban/` (`scripts/manual_testing/all.ts:27`). Note `README.md:191` documents `bash scripts/manual_testing/all.sh`, a file that does not exist; the current entry point is the yarn script.
+There is no unit test suite here. `yarn test <network> [public]` runs `scripts/manual_testing/all.ts` end to end against a real network: mint, add liquidity, swap, remove liquidity (`scripts/manual_testing/all.ts:16`). Passing `public` as the second argument reads addresses from `public/` instead of `.soroban/` (`scripts/manual_testing/all.ts:27`). There is no `all.sh`; always use the yarn script.
