@@ -271,20 +271,15 @@ export async function deploySorobanToken(
   }
 }
 
-export async function getTokenBalance(contractId: string, from: string, source: Keypair) {
-
+export async function getTokenBalance(contractId: string, from: string, source: Keypair): Promise<bigint> {
   const tokenContract = new Contract(contractId);
   const op = tokenContract.call("balance", new Address(from).toScVal());
-  
+
   const result = await invoke(op, source, true);
-  const parsedResult = scValToNative(result.result.retval).toString();
-  
-  if(!parsedResult) {
-      throw new Error("The operation has no result.");
+  const balance = scValToNative(result.result.retval);
+
+  if (typeof balance !== "bigint") {
+    throw new Error("The operation has no result.");
   }
-  if(parsedResult == 0) {
-      return parsedResult
-  }
-  const resultNumber = parseInt(parsedResult.slice(0, -1));
-  return resultNumber;
+  return balance;
 }

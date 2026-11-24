@@ -53,6 +53,7 @@ Contracts are built separately with `make build` in `contracts/` (`contracts/Mak
 - **`deployContract`** (`utils/contract.ts:41`): derives the contract id from a **random** 32 byte salt (`:47`) and the source account, so every redeploy yields a new address. Only pairs are deterministic, and they are deployed by the factory, not here.
 - **`AddressBook`** (`utils/address_book.ts:8`): `loadFromFile(network, folder = '.soroban')` (`:25`), `writeToFile()` always writes into `.soroban/` (`:45`), `getContractId` / `setContractId` (`:73`, `:89`), `getWasmHash` / `setWasmHash` (`:98`, `:114`). The on disk shape is `{ ids: {...}, hashes: {...} }`, see `public/mainnet.contracts.json`.
 - **`EnvConfig.loadFromFile`** (`utils/env_config.ts:50`): reads `configs.json`, and for mainnet takes the RPC URL from `MAINNET_RPC_URL` instead of the config file (`:63`). `getUser(key)` (`:100`) pulls any other secret key by env var name.
+- **`getTokenBalance`** (`utils/contract.ts:274`): simulates `balance` and returns the native `i128` as a `bigint` in raw token base units (7 decimals for the seeded test tokens), without truncating digits or losing precision.
 - **`upload_addresses.ts` `main`** (`scripts/upload_addresses.ts:16`): creates `public/backup-<YYYY-MM-DD>/`, copies the existing `public/` files there, then copies `<network>.contracts.json`, `tokens.json` and `random_tokens.json` from `.soroban/` (`:34`).
 
 ## Dependencies
