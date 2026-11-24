@@ -2,7 +2,7 @@
   "name": "soroswap-core-api",
   "version": "1.0.0",
   "scripts": {
-    "start": "node api/server.js"
+    "start": "node server.js"
   },
   "license": "MIT",
   "dependencies": {
