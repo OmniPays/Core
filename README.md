@@ -1,291 +1,127 @@
-# Soroswap.Finance core Smart Contracts.
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/soroswap/core)
-Soroswap.Finance is live on **Mainnet**
-- Deployer Address: [`GAYPUMZFDKUEUJ4LPTHVXVG2GD5B6AV5GGLYDMSZXCSI4QILQKSY25JI`](https://stellar.expert/explorer/public/account/GAYPUMZFDKUEUJ4LPTHVXVG2GD5B6AV5GGLYDMSZXCSI4QILQKSY25JI)
-- SoroswapFactory: `CA4HEQTL2WPEUYKYKCDOHCDNIV4QHNJ7EL4J4NQ6VADP7SYHVRYZ7AW2`
-    - [See in Stellar.Expert](https://stellar.expert/explorer/public/contract/CA4HEQTL2WPEUYKYKCDOHCDNIV4QHNJ7EL4J4NQ6VADP7SYHVRYZ7AW2)
-    - [Se in StellarChain](https://stellarchain.io/contracts/3872426bd59e4a61585086e3886d457903b53f22f89e361ea806ffcb07ac719f)
-    - [See in SorobanExp](https://www.sorobanexp.com/blockchain/ct/contract/CAG5LRYQ5JVEUI5TEID72EYOVX44TTUJT5BQR2J6J77FH65PCCFAJDDH)
+# OmniPays Core
 
+OmniPays Core is a constant-product automated market maker (AMM) for Stellar Soroban. The protocol deploys a factory that registers liquidity pools at deterministic addresses, a pair contract that holds reserves and mints LP shares, and a router that is the safe user-facing entry point for liquidity and multi-hop swaps. A shared library crate provides quote math and pair address derivation, and a small Express API publishes the deployed addresses and token lists as JSON.
 
-- SoroswapRouter: `CAG5LRYQ5JVEUI5TEID72EYOVX44TTUJT5BQR2J6J77FH65PCCFAJDDH`
-    - [See in Stellar.Expert](https://stellar.expert/explorer/public/contract/CAG5LRYQ5JVEUI5TEID72EYOVX44TTUJT5BQR2J6J77FH65PCCFAJDDH)
-    - [See in StellarChain](https://stellarchain.io/contracts/0dd5c710ea6a4a23b32207fd130eadf9c9ce899f4308e93e4ffe53fbaf108a04)
-    - [See in SorobanExp](https://www.sorobanexp.com/blockchain/ct/contract/CAG5LRYQ5JVEUI5TEID72EYOVX44TTUJT5BQR2J6J77FH65PCCFAJDDH)
+The Rust contracts live under `contracts/`; TypeScript deployment, seeding, address publishing and manual testing tooling live under `scripts/` and `utils/`. Protocol documentation is available at [docs.soroswap.finance](https://docs.soroswap.finance/).
 
-Check the documentation in https://docs.soroswap.finance/ and find the Audit Report by [OtterSec](https://osec.io/) in [./audits/2024-02-22_soroswap_ottersec_audit.pdf](audits/2024-02-22_soroswap_ottersec_audit.pdf)
+## Architecture
 
-## TLDR;
+| Component | Code | Documentation |
+|---|---|---|
+| Router — liquidity and multi-hop swaps, deadlines and slippage | `contracts/router/` | [router.md](docs/modules/router.md) |
+| Factory — pair registration, fee switch, deterministic pair deployment | `contracts/factory/`, `contracts/factory-interface/` | [factory.md](docs/modules/factory.md), [factory-interface.md](docs/modules/factory-interface.md) |
+| Pair — pool reserves, 0.3% swap fee, embedded LP token | `contracts/pair/` | [pair.md](docs/modules/pair.md) |
+| Library — quote math and deterministic pair address derivation | `contracts/library/` | [library.md](docs/modules/library.md) |
+| Test token — standard Soroban token used for local seeding | `contracts/token/` | [token.md](docs/modules/token.md) |
+| Deploy and manual test tooling | `scripts/`, `utils/` | [deploy-tooling.md](docs/modules/deploy-tooling.md) |
+| Address and token-list JSON API | `api/`, `public/`, `vercel.json` | [address-api.md](docs/modules/address-api.md) |
+| Module documentation index | `docs/modules/` | [README.md](docs/modules/README.md) |
 
-### 0. Prerequisites
+Each contract is an independent Rust crate with its own `Cargo.lock`; there is no Cargo workspace. Build order is `token`, `pair`, `factory`, `library`, `router`, as driven by `contracts/Makefile`.
 
-jq, docker, docker-compose, node, yarn
+## Prerequisites
 
-### 1. Setup
+- Git, `make`, `jq`, Docker and Docker Compose
+- Node.js and Yarn 1.22.x
+- Rust 1.85 with the `wasm32-unknown-unknown` target:
+  ```bash
+  rustup toolchain install 1.85.0 --profile minimal --target wasm32-unknown-unknown
+  rustup override set 1.85.0
+  ```
+- The Stellar CLI (`soroban`) for `soroban contract optimize`, which `make build` calls
+- A local `.env` copied from `.env.example` that supplies `SOROSWAP_ADMIN_SECRET_KEY`, `TEST_TOKENS_ADMIN_SECRET_KEY`, `TESTING_ACCOUNT_SECRET_KEY`, `TRUSTLINE_WALLET_SECRET_KEY` and, for mainnet, `MAINNET_RPC_URL`
 
-1.1. Clone this repo
+Never commit `.env` or any secret key. `.soroban/` and `.env` are gitignored; `public/` is committed on purpose.
 
-```
-git clone http://github.com/soroswap/core.git
-```
+## Quickstart
 
-1.2 Copy the .env.example file to create a new .env file:
+1. Clone this repository and install the Node dependencies:
 
-```
-cp .env.example .env
-```
-Now, edit the .env file and provide the `SOROSWAP_ADMIN_SECRET_KEY`, `TEST_TOKENS_ADMIN_SECRET_KEY`, `TESTING_ACCOUNT_SECRET_KEY` and `MAINNET_RPC_URL` variables. This will be used to deploy the contracts
+   ```bash
+   git clone <repository-url>
+   cd Core
+   yarn
+   ```
 
+2. Create your environment file and fill in the values described above:
 
-1.3 In one terminal: (choose standalone, futurenet or testnet)
+   ```bash
+   cp .env.example .env
+   ```
 
-```
-bash scripts/quickstart.sh standalone # or futurenet or testnet
-```
+3. Start a local network and the Soroban preview container in separate terminals:
 
-1.4 In another terminal
+   ```bash
+   bash scripts/quickstart.sh standalone   # or futurenet / testnet
+   bash scripts/run.sh
+   ```
 
-```
-bash scripts/run.sh
-```
+4. Inside the preview container, build the contracts and run the deployment pipeline:
 
-1.5 yarn install
+   ```bash
+   cd contracts && make build && cd ..
+   yarn build
+   yarn deploy standalone
+   ```
 
-```
-yarn
-```
-
-1.6 Build contracts
-
-```
-cd /workspace/contracts
-make build
-```
-
-
-### 2. Deploy populated network
-
-In the same terminal mentioned before, run:
-
->[!Note]
->- Accepted values for network are: `standalone | testnet | futurenet`
-  
+## Build and test
 
 ```bash
-    yarn build
-    # After building you can run:
-    yarn deploy <network>
-
+cd contracts && make build   # compile and optimize all five contracts
+cd contracts && make test    # build, then cargo test for each crate
+cd contracts && make fmt     # cargo fmt for each crate (check everywhere except token)
 ```
 
+Per crate, use `make build` or `make test` from its directory. Router budget profiling is available with `cargo test budget -- --nocapture` from `contracts/router`.
 
-This will:  
-- Install SoroswapPair. 
-- Install SoroswapFactory.
-- Install SoroswapRouter.
-- Deploy and Initialize SoroswapFactory.
-- Deploy and Initialize SoroswapRouter.
-- If network is not Mainnet:
-    - Deploy 8 test tokens
-    - Add liquidity to 3 paths.
-    - Deploy 4 Stellar Test Tokens
-    - Deploy 8 Random Tokens
-- Wrap Native XLM if does not exist.
-- Create:
-    - `.soroban/tokens.json`
-    - `./soroban/<NETWORK>.contracts.json`.
-    - `.soroban/random_tokens.json`
+To exercise the deployed contracts end to end (mint, add liquidity, swap, remove liquidity):
 
-### 3. (For local development): Serve those .json files
-
-In a new terminal run
-
-```
-bash scripts/serve_with_docker.sh
+```bash
+yarn build
+yarn test standalone              # addresses from .soroban/
+yarn test testnet public          # addresses from public/
 ```
 
-This will serve:
+`yarn test <network> [public]` is the only supported form; the optional second argument switches the address source. The entry point is `scripts/manual_testing/all.ts`. There is no `all.sh` script.
 
-- List of tokens at `http://localhost:8010/api/tokens`
-- List of random tokens at `http://localhost:8010/api/random_tokens`
-- Factory address `http://localhost:8010/api/<network>/factory`
-- Factory/Router addresses `http://localhost:8010/api/<network>/router`
+## Deploy and publish addresses
 
-### 4. (For production): Public those .json files and serve them using Vercel
-
-From project root:
-
-```
-bash scripts/run.sh
+```bash
+yarn build
+yarn deploy <network>
 yarn upload <network>
+git add public && git commit -m "chore: publish <network> addresses"
 ```
 
-This will backup current public files and copy your .soroban files into the public folder
+Accepted networks are `mainnet`, `standalone`, `futurenet`, `testnet` and `testnet-public`. `yarn deploy` installs the WASM, deploys and initializes the factory and router, and **unconditionally seeds test tokens and liquidity on every network, including mainnet**. Do not run it against mainnet unless that is intentional.
 
-Then you will need to commit this changes to /public directory
+`yarn upload <network>` backs up the current `public/` JSON files to a timestamped directory and copies the `.soroban/` outputs into `public/`; build first because it runs `dist/scripts/upload_addresses.js` directly. Vercel serves the committed `public/` files. For local serving instead, run `bash scripts/serve_with_docker.sh` and use `http://localhost:8010/api/tokens`, `/api/random_tokens` and `/api/<network>/<factory|router>`.
 
-Make sure that the origin is the soroswap/core.git ... Otherwise the only thing to do is to update the files on ./public and push them to main.
+Other commands: `yarn trustline <network> <folder>`, `yarn seeTrustline <network>`.
 
-If everything goes right. Vercel will serve the created .json files
+## Deployed addresses
 
-#### Note:
+Addresses below are taken from the committed public JSON files; pair addresses are derived on chain and are not listed. Confirm values against `public/mainnet.contracts.json` and `public/testnet.contracts.json` before integrating.
 
-If you want to deploy both in standalone an futurenet you can deploy first on futurenet and then on standalone. Then your dapp will connect to standalone using your quickstart containter and to futurenet using the public RPC.
+| Network | Factory | Router |
+|---|---|---|
+| Mainnet | [`CA4HEQTL2WPEUYKYKCDOHCDNIV4QHNJ7EL4J4NQ6VADP7SYHVRYZ7AW2`](https://stellar.expert/explorer/public/contract/CA4HEQTL2WPEUYKYKCDOHCDNIV4QHNJ7EL4J4NQ6VADP7SYHVRYZ7AW2) | [`CAG5LRYQ5JVEUI5TEID72EYOVX44TTUJT5BQR2J6J77FH65PCCFAJDDH`](https://stellar.expert/explorer/public/contract/CAG5LRYQ5JVEUI5TEID72EYOVX44TTUJT5BQR2J6J77FH65PCCFAJDDH) |
+| Testnet | [`CDP3HMUH6SMS3S7NPGNDJLULCOXXEPSHY4JKUKMBNQMATHDHWXRRJTBY`](https://stellar.expert/explorer/public/contract/CDP3HMUH6SMS3S7NPGNDJLULCOXXEPSHY4JKUKMBNQMATHDHWXRRJTBY) | [`CCJUD55AG6W5HAI5LRVNKAE5WDP5XGZBUDS5WNTIVDU7O264UZZE7BRD`](https://stellar.expert/explorer/public/contract/CCJUD55AG6W5HAI5LRVNKAE5WDP5XGZBUDS5WNTIVDU7O264UZZE7BRD) |
 
----
+## Audit and security notes
 
-# Compile and Test the contracts
+The protocol was audited by OtterSec; the report is included at [audits/2024-02-22_soroswap_ottersec_audit.pdf](audits/2024-02-22_soroswap_ottersec_audit.pdf).
 
-## Prepare
+- Integrate through the router. Pair `deposit`, `swap` and `withdraw` do not call `require_auth` and assume the caller has already transferred the tokens in.
+- Factory and router `initialize` are unauthenticated and first-caller-wins; verify the initialized instance before use.
+- Deadlines passed to the router are Unix timestamps in seconds, not milliseconds.
+- Deploy scripts submit real transactions to the selected network. Review `.env`, the target network and the seeding behavior before running them.
+- The in-repo library crate is not the version the router links against; changes to it require publishing and bumping the router dependency.
 
-1.- Run the Stellar Quickstart and the @esteblock/soroban-preview Docker containers
-Here you can choose to use an `standalone` or `futurenet` instance
+## Contributing
 
-```
-bash scripts/quickstart.sh standalone
-```
+Open an issue or pull request with the affected module. Before submitting, run `make fmt` and `make test` from `contracts/`, run the relevant Node checks, and update the corresponding living document under `docs/modules/` in the same change. Keep secrets out of commits and do not hand-edit files under `public/`.
 
-2.- Run a terminal with the `@esteblock/soroban-preview` image container
+## License
 
-```
-bash scripts/run.sh
-```
-
-## Compile
-
-3.- Inside the soroban-preview container, compile all contracts:
-
-```
-cd contracts
-make build
-```
-
-If you ran this command in the `/workspace` path, this will compile both contracts
-
-## Test
-
-4.- Run tests in all contracts
-
-```
-make test
-```
-
-## Check budget usage
-
-If you want to know how the memory and CPU instructions usage, you can go, for each contract and do:
-
-```
-cd router
-cargo test budget -- --nocapture
-```
-
-This will run the `/contracts/router/budget.rs` test that by using `env.budget`, calculates the budget.
-
-## Experiment using the soroban CLI
-
-We have some tutorials about this. Check [docs.soroswap.finance](https://docs.soroswap.finance/), [6 chapters dev.to tutorial: ](https://dev.to/esteblock/series/22986) or the [soroswap/docs repo](https://github.com/soroswap/docs)
-
-If you want to go fast to the soroban CLI "manual experiment":
-
-```bash
-bash scripts/manual_testing/all.sh standalone local
-```
-
-This will take all standalone deployments available in `.soroban` (local) and will do 1) Mint test tokens, 2) Provide Liqudiity 3) Swap 4) Remove Liquidity.
-
-You can change `standalone` for `testnet` and use the `testnet` deployed address.
-You can change `local` for `public` in order to take addresses from the `./public` folder
-
-## Stellar Assets
-
-The script `scripts/setup_stellar_classic_assets.sh` gets all the Stellar Assets from `known_stellar_classic_assets.json` and puts them into the tokens.json file for the API
-
-This will get the token id and wrap the native (XLM) token if the network is standalone
-
-```bash
-#This gets the address of any Stellar assets --asset can be either native or <TOKEN:ISSUER>
-soroban lab token id --network standalone --asset native
-
-#If using standalone the native asset needs to be wrapped for it to work
-soroban lab token wrap --asset native --network standalone --source-account my-account
-
-#PS: If it gives an error... or the token is already wrapped or your source account is not funded
-```
-
-## `deploy_random_tokens.sh` Script Documentation
-
-#### Overview
-
-The `deploy_random_tokens.sh` script deploys a specified number of random test tokens to a selected blockchain network.
-
-#### Usage
-
-```bash
-scripts/deploy_random_tokens.sh <network> [<number_of_tokens>]
-```
-
-- `<network>`: Choose from standalone, futurenet, or testnet.
-- `<number_of_tokens>`: Optional, defaults to 4 if not specified.
-
-#### Functionality
-
-- Creates a specified number of test tokens.
-- Saves token details in .soroban/random_tokens.json.
-- Appends new tokens on futurenet and testnet.
-- Replaces or appends tokens for standalone based on prior runs.
-
-#### Handling Network Resets
-
-Manually update or delete random_tokens.json post-reset on futurenet or testnet.
-
-# Manual Testing
-
-The following example showcase a local manual testing.
-Make sure you have deployed the contracts to the network and saved it locally 
-
-
-We provide code for manual testing of the contracts using `typescript`. This will allow us to play aroung without the need of an User Interface.
-
-To run all the transsactions we could do on soroswap protocol just run (inside soroban-preview image):
-
-```bash
-# Usage:
-# yarn test <network> <public>
-# network: Type of the network to configure (standalone, futurenet, testnet, testnet-public)
-# public: OPTIONAL: If you type `public` as a 2nd argument, you will run test agains the addresses in the public folder
-
-yarn build #optional, if you have already built everything is not needed
-yarn test standalone
-
-```
-
-To run tests against contracts addresses in your local `.soroban` folder, do:
-```bash
-yarn test standalone
-```
-
-To run tests agains contracts addresses in the public `public` folder, do:
-```bash
-yarn test public
-```
-
-# Set trustlines to all tokens from token-list
-
-You can run the following script to set trustlines to all tokens from the token-list
-
-```bash
-yarn trustline <network> <folder>
-```
-where `network` is the network(it could be mainnet, testnet or standalone) to set the trustlines and `folder` is the folder where the token-list is located (public or .soroban). If you want to set the trustlines to the tokens in the public folder, you can run:
-
-```bash
-yarn trustline testnet public
-```
-
-however, if you use mainnet, folder is not used and the token list is the official soroswap token list.
-
-In order to check the existing trustlines of the token list, you can run:
-
-```bash
-yarn seeTrustline mainnet
-```
+The repository is MIT licensed; see [LICENSE](LICENSE). The `contracts/library` crate is published separately under GPL-3.0.
